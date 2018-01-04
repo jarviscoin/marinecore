@@ -1,8 +1,3 @@
-// Copyright (c) 2009-2012 Marinecore Developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #include "init.h" // for pwalletMain
 #include "marinecorerpc.h"
 #include "ui_interface.h"

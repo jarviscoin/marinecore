@@ -1,8 +1,3 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Marinecore developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef MARINECORE_MAIN_H
 #define MARINECORE_MAIN_H
 
@@ -26,25 +21,18 @@ class CInv;
 class CRequestTracker;
 class CNode;
 
-// This fix should give some protection agains sudden
-// changes of the network hashrate.
-// Thanks: https://marinecoretalk.org/index.php?topic=182430.msg1904506#msg1904506
-// activated: after block 15000 for all following diff retargeting events
 #define COINFIX1_BLOCK  (15000)
 
-// for now, we leave the block size at 1 MB, meaning we support roughly 2400 transactions
-// per block, which means about 160 tps
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
 static const unsigned int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
 static const unsigned int MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE/100;
 static const int64 MIN_TX_FEE = 100000;
 static const int64 MIN_RELAY_TX_FEE = MIN_TX_FEE;
-static const int64 MAX_MONEY = 9999999999 * COIN; // maximum number of coins
+static const int64 MAX_MONEY = 9999999999 * COIN;
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 static const int COINBASE_MATURITY = 15;
-// Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
-static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
+static const unsigned int LOCKTIME_THRESHOLD = 500000000;
 #ifdef USE_UPNP
 static const int fHaveUPnP = true;
 #else
@@ -53,10 +41,6 @@ static const int fHaveUPnP = false;
 
 
 extern CScript COINBASE_FLAGS;
-
-
-
-
 
 
 extern CCriticalSection cs_main;
@@ -79,11 +63,9 @@ extern CCriticalSection cs_setpwalletRegistered;
 extern std::set<CWallet*> setpwalletRegistered;
 extern unsigned char pchMessageStart[4];
 
-// Settings
 extern int64 nTransactionFee;
 extern int64 nMinimumInputValue;
 
-// Minimum disk space required - used in CheckDiskSpace()
 static const uint64 nMinDiskSpace = 52428800;
 
 
@@ -117,17 +99,9 @@ bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
 
 
 
-
-
-
-
-
-
-
-
 bool GetWalletFile(CWallet* pwallet, std::string &strWalletFileOut);
 
-/** Position on disk for a particular transaction. */
+
 class CDiskTxPos
 {
 public:
@@ -178,8 +152,6 @@ public:
 };
 
 
-
-/** An inpoint - a combination of a transaction and an index n into its vin */
 class CInPoint
 {
 public:
@@ -194,7 +166,6 @@ public:
 
 
 
-/** An outpoint - a combination of a transaction hash and an index n into its vout */
 class COutPoint
 {
 public:
@@ -235,11 +206,6 @@ public:
 
 
 
-
-/** An input of a transaction.  It contains the location of the previous
- * transaction's output that it claims and a signature that matches the
- * output's public key.
- */
 class CTxIn
 {
 public:

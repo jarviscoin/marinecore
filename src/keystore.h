@@ -1,8 +1,3 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Marinecore developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef MARINECORE_KEYSTORE_H
 #define MARINECORE_KEYSTORE_H
 
@@ -12,7 +7,6 @@
 
 class CScript;
 
-/** A virtual base class for key stores */
 class CKeyStore
 {
 protected:
@@ -21,16 +15,13 @@ protected:
 public:
     virtual ~CKeyStore() {}
 
-    // Add a key to the store.
     virtual bool AddKey(const CKey& key) =0;
 
-    // Check whether a key corresponding to a given address is present in the store.
     virtual bool HaveKey(const CKeyID &address) const =0;
     virtual bool GetKey(const CKeyID &address, CKey& keyOut) const =0;
     virtual void GetKeys(std::set<CKeyID> &setAddress) const =0;
     virtual bool GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const;
 
-    // Support for BIP 0013 : see https://en.marinecore.it/wiki/BIP_0013
     virtual bool AddCScript(const CScript& redeemScript) =0;
     virtual bool HaveCScript(const CScriptID &hash) const =0;
     virtual bool GetCScript(const CScriptID &hash, CScript& redeemScriptOut) const =0;
@@ -48,7 +39,6 @@ public:
 typedef std::map<CKeyID, std::pair<CSecret, bool> > KeyMap;
 typedef std::map<CScriptID, CScript > ScriptMap;
 
-/** Basic key store, that keeps keys in an address->secret map */
 class CBasicKeyStore : public CKeyStore
 {
 protected:
@@ -100,9 +90,6 @@ public:
 
 typedef std::map<CKeyID, std::pair<CPubKey, std::vector<unsigned char> > > CryptedKeyMap;
 
-/** Keystore which keeps the private keys encrypted.
- * It derives from the basic key store, which is used if no encryption is active.
- */
 class CCryptoKeyStore : public CBasicKeyStore
 {
 private:
@@ -110,14 +97,11 @@ private:
 
     CKeyingMaterial vMasterKey;
 
-    // if fUseCrypto is true, mapKeys must be empty
-    // if fUseCrypto is false, vMasterKey must be empty
     bool fUseCrypto;
 
 protected:
     bool SetCrypted();
 
-    // will encrypt previously unencrypted keys
     bool EncryptKeys(CKeyingMaterial& vMasterKeyIn);
 
     bool Unlock(const CKeyingMaterial& vMasterKeyIn);
@@ -176,9 +160,6 @@ public:
         }
     }
 
-    /* Wallet status (encrypted, locked) changed.
-     * Note: Called without locks held.
-     */
     boost::signals2::signal<void (CCryptoKeyStore* wallet)> NotifyStatusChanged;
 };
 

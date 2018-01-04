@@ -1,9 +1,3 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Marinecore developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #include "wallet.h"
 #include "walletdb.h"
 #include "crypter.h"
@@ -19,10 +13,6 @@
 using namespace std;
 
 
-//////////////////////////////////////////////////////////////////////////////
-//
-// mapWallet
-//
 
 struct CompareValueOnly
 {
@@ -35,13 +25,13 @@ struct CompareValueOnly
 
 CPubKey CWallet::GenerateNewKey()
 {
-    bool fCompressed = CanSupportFeature(FEATURE_COMPRPUBKEY); // default to compressed public keys if we want 0.6.0 wallets
+    bool fCompressed = CanSupportFeature(FEATURE_COMPRPUBKEY); 
 
     RandAddSeedPerfmon();
     CKey key;
     key.MakeNewKey(fCompressed);
 
-    // Compressed public keys were introduced in version 0.6.0
+ 
     if (fCompressed)
         SetMinVersion(FEATURE_COMPRPUBKEY);
 
