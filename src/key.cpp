@@ -1,8 +1,3 @@
-// Copyright (c) 2009-2012 The Marinecore developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #include <map>
 
 #include <openssl/ecdsa.h>
@@ -10,7 +5,6 @@
 
 #include "key.h"
 
-// Generate a private key from just the secret parameter
 int EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)
 {
     int ok = 0;
@@ -47,9 +41,6 @@ err:
     return(ok);
 }
 
-// Perform ECDSA key recovery (see SEC1 4.1.6) for curves over (mod p)-fields
-// recid selects which key is recovered
-// if check is nonzero, additional checks are performed
 int ECDSA_SIG_recover_key_GFp(EC_KEY *eckey, ECDSA_SIG *ecsig, const unsigned char *msg, int msglen, int recid, int check)
 {
     if (!eckey) return 0;
@@ -269,20 +260,16 @@ CPubKey CKey::GetPubKey() const
 bool CKey::Sign(uint256 hash, std::vector<unsigned char>& vchSig)
 {
     unsigned int nSize = ECDSA_size(pkey);
-    vchSig.resize(nSize); // Make sure it is big enough
+    vchSig.resize(nSize);
     if (!ECDSA_sign(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], &nSize, pkey))
     {
         vchSig.clear();
         return false;
     }
-    vchSig.resize(nSize); // Shrink to fit actual size
+    vchSig.resize(nSize);
     return true;
 }
 
-// create a compact signature (65 bytes), which allows reconstructing the used public key
-// The format is one header byte, followed by two times 32 bytes for the serialized r and s values.
-// The header byte: 0x1B = first key with even y, 0x1C = first key with odd y,
-//                  0x1D = second key with even y, 0x1E = second key with odd y
 bool CKey::SignCompact(uint256 hash, std::vector<unsigned char>& vchSig)
 {
     bool fOk = false;
@@ -322,10 +309,6 @@ bool CKey::SignCompact(uint256 hash, std::vector<unsigned char>& vchSig)
     return fOk;
 }
 
-// reconstruct public key from a compact signature
-// This is only slightly more CPU intensive than just verifying it.
-// If this function succeeds, the recovered public key is guaranteed to be valid
-// (the signature is a valid signature of the given data for that key)
 bool CKey::SetCompactSignature(uint256 hash, const std::vector<unsigned char>& vchSig)
 {
     if (vchSig.size() != 65)
@@ -355,7 +338,6 @@ bool CKey::SetCompactSignature(uint256 hash, const std::vector<unsigned char>& v
 
 bool CKey::Verify(uint256 hash, const std::vector<unsigned char>& vchSig)
 {
-    // -1 = error, 0 = bad sig, 1 = good
     if (ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey) != 1)
         return false;
 
