@@ -1,4 +1,3 @@
-
 #include "addrman.h"
 
 using namespace std;
