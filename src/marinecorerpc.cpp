@@ -1,10 +1,3 @@
-// Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Marinecore developers
-// Copyright (c) 2011-2012 The Litecoin Developers
-// Copyright (c) 2013 adam m.
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #include "main.h"
 #include "wallet.h"
 #include "db.h"
@@ -44,11 +37,11 @@ static std::string strRPCUserColonPass;
 static int64 nWalletUnlockTime;
 static CCriticalSection cs_nWalletUnlockTime;
 
-extern Value getconnectioncount(const Array& params, bool fHelp); // in rpcnet.cpp
+extern Value getconnectioncount(const Array& params, bool fHelp);
 extern Value getpeerinfo(const Array& params, bool fHelp);
-extern Value dumpprivkey(const Array& params, bool fHelp); // in rpcdump.cpp
+extern Value dumpprivkey(const Array& params, bool fHelp);
 extern Value importprivkey(const Array& params, bool fHelp);
-extern Value getrawtransaction(const Array& params, bool fHelp); // in rcprawtransaction.cpp
+extern Value getrawtransaction(const Array& params, bool fHelp);
 extern Value listunspent(const Array& params, bool fHelp);
 extern Value createrawtransaction(const Array& params, bool fHelp);
 extern Value decoderawtransaction(const Array& params, bool fHelp);
@@ -104,8 +97,6 @@ void RPCTypeCheck(const Object& o,
 
 double GetDifficulty(const CBlockIndex* blockindex = NULL)
 {
-    // Floating point number that is a multiple of the minimum difficulty,
-    // minimum difficulty = 1.0.
     if (blockindex == NULL)
     {
         if (pindexBest == NULL)
@@ -226,7 +217,6 @@ Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex)
     return result;
 }
 
-/// Note: This interface may still be subject to change.
 
 string CRPCTable::help(string strCommand) const
 {
@@ -236,7 +226,6 @@ string CRPCTable::help(string strCommand) const
     {
         const CRPCCommand *pcmd = mi->second;
         string strMethod = mi->first;
-        // We already filter duplicates, but these deprecated screw up the sort order
         if (strMethod.find("label") != string::npos)
             continue;
         if (strCommand != "" && strMethod != strCommand)
@@ -250,7 +239,6 @@ string CRPCTable::help(string strCommand) const
         }
         catch (std::exception& e)
         {
-            // Help text is returned in an exception
             string strHelp = string(e.what());
             if (strCommand == "")
                 if (strHelp.find('\n') != string::npos)
@@ -285,7 +273,6 @@ Value stop(const Array& params, bool fHelp)
         throw runtime_error(
             "stop\n"
             "Stop MarineCoin server.");
-    // Shutdown will take long enough that the response should get back
     StartShutdown();
     return "MarineCoin server has now stopped running!";
 }
@@ -312,17 +299,13 @@ Value getdifficulty(const Array& params, bool fHelp)
     return GetDifficulty();
 }
 
-
-// Litecoin: Return average network hashes per second based on last number of blocks.
 Value GetNetworkHashPS(int lookup) {
     if (pindexBest == NULL)
         return 0;
 
-    // If lookup is -1, then use blocks since last difficulty change.
     if (lookup <= 0)
         lookup = pindexBest->nHeight % 2016 + 1;
 
-    // If lookup is larger than chain, then set it to chain length.
     if (lookup > pindexBest->nHeight)
         lookup = pindexBest->nHeight;
 
@@ -461,7 +444,6 @@ Value getnewaddress(const Array& params, bool fHelp)
             "If [account] is specified (recommended), it is added to the address book "
             "so payments received with the address will be credited to [account].");
 
-    // Parse the account first so we don't generate a key if there's an error
     string strAccount;
     if (params.size() > 0)
         strAccount = AccountFromValue(params[0]);
@@ -469,7 +451,6 @@ Value getnewaddress(const Array& params, bool fHelp)
     if (!pwalletMain->IsLocked())
         pwalletMain->TopUpKeyPool();
 
-    // Generate a new key that is added to wallet
     CPubKey newKey;
     if (!pwalletMain->GetKeyFromPool(newKey, false))
         throw JSONRPCError(-12, "Error: Keypool ran out, please call keypoolrefill first");
@@ -490,7 +471,6 @@ CMarinecoreAddress GetAccountAddress(string strAccount, bool bForceNew=false)
 
     bool bKeyUsed = false;
 
-    // Check if the current key has been used
     if (account.vchPubKey.IsValid())
     {
         CScript scriptPubKey;
@@ -506,7 +486,6 @@ CMarinecoreAddress GetAccountAddress(string strAccount, bool bForceNew=false)
         }
     }
 
-    // Generate a new key
     if (!account.vchPubKey.IsValid() || bForceNew || bKeyUsed)
     {
         if (!pwalletMain->GetKeyFromPool(account.vchPubKey, false))
@@ -526,7 +505,6 @@ Value getaccountaddress(const Array& params, bool fHelp)
             "getaccountaddress <account>\n"
             "Returns the current MarineCoin address for receiving payments to this account.");
 
-    // Parse the account first so we don't generate a key if there's an error
     string strAccount = AccountFromValue(params[0]);
 
     Value ret;
@@ -554,7 +532,6 @@ Value setaccount(const Array& params, bool fHelp)
     if (params.size() > 1)
         strAccount = AccountFromValue(params[1]);
 
-    // Detect when changing the account of an address that is the 'unused current key' of another account:
     if (pwalletMain->mapAddressBook.count(address.Get()))
     {
         string strOldAccount = pwalletMain->mapAddressBook[address.Get()];
@@ -596,7 +573,6 @@ Value getaddressesbyaccount(const Array& params, bool fHelp)
 
     string strAccount = AccountFromValue(params[0]);
 
-    // Find all addresses that have the given account
     Array ret;
     BOOST_FOREACH(const PAIRTYPE(CMarinecoreAddress, string)& item, pwalletMain->mapAddressBook)
     {
@@ -615,7 +591,6 @@ Value settxfee(const Array& params, bool fHelp)
             "settxfee <amount>\n"
             "<amount> is a real and is rounded to the nearest 0.00000001");
 
-    // Amount
     int64 nAmount = 0;
     if (params[0].get_real() != 0.0)
         nAmount = AmountFromValue(params[0]);        // rejects 0.0 amounts
@@ -631,7 +606,6 @@ Value setmininput(const Array& params, bool fHelp)
             "setmininput <amount>\n"
             "<amount> is a real and is rounded to the nearest 0.00000001");
 
-    // Amount
     int64 nAmount = 0;
     if (params[0].get_real() != 0.0)
         nAmount = AmountFromValue(params[0]);        // rejects 0.0 amounts
@@ -652,10 +626,8 @@ Value sendtoaddress(const Array& params, bool fHelp)
     if (!address.IsValid())
         throw JSONRPCError(-5, "Invalid MarineCoin address");
 
-    // Amount
     int64 nAmount = AmountFromValue(params[1]);
 
-    // Wallet comments
     CWalletTx wtx;
     if (params.size() > 2 && params[2].type() != null_type && !params[2].get_str().empty())
         wtx.mapValue["comment"] = params[2].get_str();
@@ -751,7 +723,6 @@ Value getreceivedbyaddress(const Array& params, bool fHelp)
             "getreceivedbyaddress <marinecoin address> [minconf=1]\n"
             "Returns the total amount received by <marinecoin address> in transactions with at least [minconf] confirmations.");
 
-    // MarineCoin address
     CMarinecoreAddress address = CMarinecoreAddress(params[0].get_str());
     CScript scriptPubKey;
     if (!address.IsValid())
@@ -760,12 +731,10 @@ Value getreceivedbyaddress(const Array& params, bool fHelp)
     if (!IsMine(*pwalletMain,scriptPubKey))
         return (double)0.0;
 
-    // Minimum confirmations
     int nMinDepth = 1;
     if (params.size() > 1)
         nMinDepth = params[1].get_int();
 
-    // Tally
     int64 nAmount = 0;
     for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
     {
@@ -801,17 +770,14 @@ Value getreceivedbyaccount(const Array& params, bool fHelp)
             "getreceivedbyaccount <account> [minconf=1]\n"
             "Returns the total amount received by addresses with <account> in transactions with at least [minconf] confirmations.");
 
-    // Minimum confirmations
     int nMinDepth = 1;
     if (params.size() > 1)
         nMinDepth = params[1].get_int();
 
-    // Get the set of pub keys assigned to account
     string strAccount = AccountFromValue(params[0]);
     set<CTxDestination> setAddress;
     GetAccountAddresses(strAccount, setAddress);
 
-    // Tally
     int64 nAmount = 0;
     for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
     {
@@ -836,7 +802,6 @@ int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinD
 {
     int64 nBalance = 0;
 
-    // Tally wallet transactions
     for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
     {
         const CWalletTx& wtx = (*it).second;
@@ -851,7 +816,6 @@ int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinD
         nBalance += nGenerated - nSent - nFee;
     }
 
-    // Tally internal accounting entries
     nBalance += walletdb.GetAccountCreditDebit(strAccount);
 
     return nBalance;
@@ -880,9 +844,6 @@ Value getbalance(const Array& params, bool fHelp)
         nMinDepth = params[1].get_int();
 
     if (params[0].get_str() == "*") {
-        // Calculate total balance a different way from GetBalance()
-        // (GetBalance() sums up all unspent TxOuts)
-        // getbalance and getbalance '*' should always return the same number.
         int64 nBalance = 0;
         for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
         {
@@ -928,7 +889,6 @@ Value movecmd(const Array& params, bool fHelp)
     string strTo = AccountFromValue(params[1]);
     int64 nAmount = AmountFromValue(params[2]);
     if (params.size() > 3)
-        // unused parameter, used to be nMinDepth, keep type-checking it though
         (void)params[3].get_int();
     string strComment;
     if (params.size() > 4)
@@ -940,7 +900,6 @@ Value movecmd(const Array& params, bool fHelp)
 
     int64 nNow = GetAdjustedTime();
 
-    // Debit
     CAccountingEntry debit;
     debit.strAccount = strFrom;
     debit.nCreditDebit = -nAmount;
@@ -949,7 +908,6 @@ Value movecmd(const Array& params, bool fHelp)
     debit.strComment = strComment;
     walletdb.WriteAccountingEntry(debit);
 
-    // Credit
     CAccountingEntry credit;
     credit.strAccount = strTo;
     credit.nCreditDebit = nAmount;
@@ -991,12 +949,10 @@ Value sendfrom(const Array& params, bool fHelp)
 
     EnsureWalletIsUnlocked();
 
-    // Check funds
     int64 nBalance = GetAccountBalance(strAccount, nMinDepth);
     if (nAmount > nBalance)
         throw JSONRPCError(-6, "Account has insufficient funds");
 
-    // Send
     string strError = pwalletMain->SendMoneyToDestination(address.Get(), nAmount, wtx);
     if (strError != "")
         throw JSONRPCError(-4, strError);
@@ -1048,12 +1004,10 @@ Value sendmany(const Array& params, bool fHelp)
 
     EnsureWalletIsUnlocked();
 
-    // Check funds
     int64 nBalance = GetAccountBalance(strAccount, nMinDepth);
     if (totalAmount > nBalance)
         throw JSONRPCError(-6, "Account has insufficient funds");
 
-    // Send
     CReserveKey keyChange(pwalletMain);
     int64 nFeeRequired = 0;
     bool fCreated = pwalletMain->CreateTransaction(vecSend, wtx, keyChange, nFeeRequired);
@@ -1086,7 +1040,6 @@ Value addmultisigaddress(const Array& params, bool fHelp)
     if (params.size() > 2)
         strAccount = AccountFromValue(params[2]);
 
-    // Gather public keys
     if (nRequired < 1)
         throw runtime_error("a multisignature address must require at least one key to redeem");
     if ((int)keys.size() < nRequired)
@@ -1099,7 +1052,6 @@ Value addmultisigaddress(const Array& params, bool fHelp)
     {
         const std::string& ks = keys[i].get_str();
 
-        // Case 1: MarineCoin address and we have full public key:
         CMarinecoreAddress address(ks);
         if (address.IsValid())
         {
@@ -1115,7 +1067,6 @@ Value addmultisigaddress(const Array& params, bool fHelp)
                 throw runtime_error(" Invalid public key: "+ks);
         }
 
-        // Case 2: hex public key
         else if (IsHex(ks))
         {
             CPubKey vchPubKey(ParseHex(ks));
@@ -1128,7 +1079,6 @@ Value addmultisigaddress(const Array& params, bool fHelp)
         }
     }
 
-    // Construct using pay-to-script-hash:
     CScript inner;
     inner.SetMultisig(nRequired, pubkeys);
     CScriptID innerID = inner.GetID();
@@ -1152,17 +1102,14 @@ struct tallyitem
 
 Value ListReceived(const Array& params, bool fByAccounts)
 {
-    // Minimum confirmations
     int nMinDepth = 1;
     if (params.size() > 0)
         nMinDepth = params[0].get_int();
 
-    // Whether to include empty accounts
     bool fIncludeEmpty = false;
     if (params.size() > 1)
         fIncludeEmpty = params[1].get_bool();
 
-    // Tally
     map<CMarinecoreAddress, tallyitem> mapTally;
     for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
     {
@@ -1187,7 +1134,6 @@ Value ListReceived(const Array& params, bool fByAccounts)
         }
     }
 
-    // Reply
     Array ret;
     map<string, tallyitem> mapAccountTally;
     BOOST_FOREACH(const PAIRTYPE(CMarinecoreAddress, string)& item, pwalletMain->mapAddressBook)
@@ -1282,7 +1228,6 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
 
     bool fAllAccounts = (strAccount == string("*"));
 
-    // Generated blocks assigned to account ""
     if ((nGeneratedMature+nGeneratedImmature) != 0 && (fAllAccounts || strAccount == ""))
     {
         Object entry;
@@ -1302,7 +1247,6 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
         ret.push_back(entry);
     }
 
-    // Sent
     if ((!listSent.empty() || nFee != 0) && (fAllAccounts || strAccount == strSentAccount))
     {
         BOOST_FOREACH(const PAIRTYPE(CTxDestination, int64)& s, listSent)
@@ -1318,8 +1262,7 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
             ret.push_back(entry);
         }
     }
-
-    // Received
+    
     if (listReceived.size() > 0 && wtx.GetDepthInMainChain() >= nMinDepth)
     {
         BOOST_FOREACH(const PAIRTYPE(CTxDestination, int64)& r, listReceived)
@@ -1384,13 +1327,10 @@ Value listtransactions(const Array& params, bool fHelp)
     Array ret;
     CWalletDB walletdb(pwalletMain->strWalletFile);
 
-    // First: get all CWalletTx and CAccountingEntry into a sorted-by-time multimap.
     typedef pair<CWalletTx*, CAccountingEntry*> TxPair;
     typedef multimap<int64, TxPair > TxItems;
     TxItems txByTime;
 
-    // Note: maintaining indices in the database of (account,time) --> txid and (account, time) --> acentry
-    // would make this much faster for applications that do this a lot.
     for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
     {
         CWalletTx* wtx = &((*it).second);
@@ -1403,7 +1343,6 @@ Value listtransactions(const Array& params, bool fHelp)
         txByTime.insert(make_pair(entry.nTime, TxPair((CWalletTx*)0, &entry)));
     }
 
-    // iterate backwards until we have nCount items to return:
     for (TxItems::reverse_iterator it = txByTime.rbegin(); it != txByTime.rend(); ++it)
     {
         CWalletTx *const pwtx = (*it).second.first;
@@ -1415,7 +1354,6 @@ Value listtransactions(const Array& params, bool fHelp)
 
         if ((int)ret.size() >= (nCount+nFrom)) break;
     }
-    // ret is newest to oldest
 
     if (nFrom > (int)ret.size())
         nFrom = ret.size();
@@ -1429,7 +1367,7 @@ Value listtransactions(const Array& params, bool fHelp)
     if (last != ret.end()) ret.erase(last, ret.end());
     if (first != ret.begin()) ret.erase(ret.begin(), first);
 
-    std::reverse(ret.begin(), ret.end()); // Return oldest to newest
+    std::reverse(ret.begin(), ret.end());
 
     return ret;
 }
@@ -1447,7 +1385,7 @@ Value listaccounts(const Array& params, bool fHelp)
 
     map<string, int64> mapAccountBalances;
     BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& entry, pwalletMain->mapAddressBook) {
-        if (IsMine(*pwalletMain, entry.first)) // This address belongs to me
+        if (IsMine(*pwalletMain, entry.first)) 
             mapAccountBalances[entry.second] = 0;
     }
 
@@ -1617,7 +1555,6 @@ Value keypoolrefill(const Array& params, bool fHelp)
 
 void ThreadTopUpKeyPool(void* parg)
 {
-    // Make this thread recognisable as the key-topping-up thread
     RenameThread("marinecore-key-top");
 
     pwalletMain->TopUpKeyPool();
@@ -1625,7 +1562,6 @@ void ThreadTopUpKeyPool(void* parg)
 
 void ThreadCleanWalletPassphrase(void* parg)
 {
-    // Make this thread recognisable as the wallet relocking thread
     RenameThread("marinecore-lock-wa");
 
     int64 nMyWakeTime = GetTimeMillis() + *((int64*)parg) * 1000;
@@ -1681,11 +1617,9 @@ Value walletpassphrase(const Array& params, bool fHelp)
     if (!pwalletMain->IsLocked())
         throw JSONRPCError(-17, "Error: Wallet is already unlocked.");
 
-    // Note that the walletpassphrase is stored in params[0] which is not mlock()ed
     SecureString strWalletPass;
     strWalletPass.reserve(100);
-    // TODO: get rid of this .c_str() by implementing SecureString::operator=(std::string)
-    // Alternately, find a way to make params[0] mlock()'d to begin with.
+    
     strWalletPass = params[0].get_str().c_str();
 
     if (strWalletPass.length() > 0)
@@ -1717,8 +1651,6 @@ Value walletpassphrasechange(const Array& params, bool fHelp)
     if (!pwalletMain->IsCrypted())
         throw JSONRPCError(-15, "Error: running with an unencrypted wallet, but walletpassphrasechange was called.");
 
-    // TODO: get rid of these .c_str() calls by implementing SecureString::operator=(std::string)
-    // Alternately, find a way to make params[0] mlock()'d to begin with.
     SecureString strOldWalletPass;
     strOldWalletPass.reserve(100);
     strOldWalletPass = params[0].get_str().c_str();
@@ -1773,8 +1705,6 @@ Value encryptwallet(const Array& params, bool fHelp)
     if (pwalletMain->IsCrypted())
         throw JSONRPCError(-15, "Error: running with an encrypted wallet, but encryptwallet was called.");
 
-    // TODO: get rid of this .c_str() by implementing SecureString::operator=(std::string)
-    // Alternately, find a way to make params[0] mlock()'d to begin with.
     SecureString strWalletPass;
     strWalletPass.reserve(100);
     strWalletPass = params[0].get_str().c_str();
@@ -1787,9 +1717,6 @@ Value encryptwallet(const Array& params, bool fHelp)
     if (!pwalletMain->EncryptWallet(strWalletPass))
         throw JSONRPCError(-16, "Error: Failed to encrypt the wallet.");
 
-    // BDB seems to have a bad habit of writing old data into
-    // slack space in .dat files; that is bad if the old data is
-    // unencrypted private keys.  So:
     StartShutdown();
     return "wallet encrypted; MarineCoin server stopping, restart to run with encrypted wallet";
 }
@@ -1879,7 +1806,6 @@ Value getworkex(const Array& params, bool fHelp)
 
     if (params.size() == 0)
     {
-        // Update block
         static unsigned int nTransactionsUpdatedLast;
         static CBlockIndex* pindexPrev;
         static int64 nStart;
@@ -1889,7 +1815,6 @@ Value getworkex(const Array& params, bool fHelp)
         {
             if (pindexPrev != pindexBest)
             {
-                // Deallocate old blocks since they're obsolete now
                 mapNewBlock.clear();
                 BOOST_FOREACH(CBlock* pblock, vNewBlock)
                     delete pblock;
@@ -1899,25 +1824,20 @@ Value getworkex(const Array& params, bool fHelp)
             pindexPrev = pindexBest;
             nStart = GetTime();
 
-            // Create new block
             pblock = CreateNewBlock(reservekey);
             if (!pblock)
                 throw JSONRPCError(-7, "Out of memory");
             vNewBlock.push_back(pblock);
         }
 
-        // Update nTime
         pblock->nTime = max(pindexPrev->GetMedianTimePast()+1, GetAdjustedTime());
         pblock->nNonce = 0;
 
-        // Update nExtraNonce
         static unsigned int nExtraNonce = 0;
         IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
 
-        // Save
         mapNewBlock[pblock->hashMerkleRoot] = make_pair(pblock, pblock->vtx[0].vin[0].scriptSig);
 
-        // Prebuild hash buffers
         char pmidstate[32];
         char pdata[128];
         char phash1[64];
@@ -1951,7 +1871,6 @@ Value getworkex(const Array& params, bool fHelp)
     }
     else
     {
-        // Parse parameters
         vector<unsigned char> vchData = ParseHex(params[0].get_str());
         vector<unsigned char> coinbase;
 
@@ -1963,11 +1882,9 @@ Value getworkex(const Array& params, bool fHelp)
 
         CBlock* pdata = (CBlock*)&vchData[0];
 
-        // Byte reverse
         for (int i = 0; i < 128/4; i++)
             ((unsigned int*)pdata)[i] = ByteReverse(((unsigned int*)pdata)[i]);
 
-        // Get saved block
         if (!mapNewBlock.count(pdata->hashMerkleRoot))
             return false;
         CBlock* pblock = mapNewBlock[pdata->hashMerkleRoot].first;
@@ -2011,7 +1928,6 @@ Value getwork(const Array& params, bool fHelp)
 
     if (params.size() == 0)
     {
-        // Update block
         static unsigned int nTransactionsUpdatedLast;
         static CBlockIndex* pindexPrev;
         static int64 nStart;
@@ -2021,7 +1937,6 @@ Value getwork(const Array& params, bool fHelp)
         {
             if (pindexPrev != pindexBest)
             {
-                // Deallocate old blocks since they're obsolete now
                 mapNewBlock.clear();
                 BOOST_FOREACH(CBlock* pblock, vNewBlock)
                     delete pblock;
@@ -2031,25 +1946,20 @@ Value getwork(const Array& params, bool fHelp)
             pindexPrev = pindexBest;
             nStart = GetTime();
 
-            // Create new block
             pblock = CreateNewBlock(reservekey);
             if (!pblock)
                 throw JSONRPCError(-7, "Out of memory");
             vNewBlock.push_back(pblock);
         }
 
-        // Update nTime
         pblock->UpdateTime(pindexPrev);
         pblock->nNonce = 0;
 
-        // Update nExtraNonce
         static unsigned int nExtraNonce = 0;
         IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
 
-        // Save
         mapNewBlock[pblock->hashMerkleRoot] = make_pair(pblock, pblock->vtx[0].vin[0].scriptSig);
 
-        // Prebuild hash buffers
         char pmidstate[32];
         char pdata[128];
         char phash1[64];
@@ -2058,26 +1968,23 @@ Value getwork(const Array& params, bool fHelp)
         uint256 hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
 
         Object result;
-        result.push_back(Pair("midstate", HexStr(BEGIN(pmidstate), END(pmidstate)))); // deprecated
+        result.push_back(Pair("midstate", HexStr(BEGIN(pmidstate), END(pmidstate)))); 
         result.push_back(Pair("data",     HexStr(BEGIN(pdata), END(pdata))));
-        result.push_back(Pair("hash1",    HexStr(BEGIN(phash1), END(phash1)))); // deprecated
+        result.push_back(Pair("hash1",    HexStr(BEGIN(phash1), END(phash1)))); 
         result.push_back(Pair("target",   HexStr(BEGIN(hashTarget), END(hashTarget))));
-        result.push_back(Pair("algorithm", "scrypt:1024,1,1"));  // specify that we should use the scrypt algorithm
+        result.push_back(Pair("algorithm", "scrypt:1024,1,1")); 
         return result;
     }
     else
     {
-        // Parse parameters
         vector<unsigned char> vchData = ParseHex(params[0].get_str());
         if (vchData.size() != 128)
             throw JSONRPCError(-8, "Invalid parameter");
         CBlock* pdata = (CBlock*)&vchData[0];
 
-        // Byte reverse
         for (int i = 0; i < 128/4; i++)
             ((unsigned int*)pdata)[i] = ByteReverse(((unsigned int*)pdata)[i]);
 
-        // Get saved block
         if (!mapNewBlock.count(pdata->hashMerkleRoot))
             return false;
         CBlock* pblock = mapNewBlock[pdata->hashMerkleRoot].first;
@@ -2138,7 +2045,6 @@ Value getblocktemplate(const Array& params, bool fHelp)
 
         static CReserveKey reservekey(pwalletMain);
 
-        // Update block
         static unsigned int nTransactionsUpdatedLast;
         static CBlockIndex* pindexPrev;
         static int64 nStart;
@@ -2150,7 +2056,6 @@ Value getblocktemplate(const Array& params, bool fHelp)
             pindexPrev = pindexBest;
             nStart = GetTime();
 
-            // Create new block
             if(pblock)
                 delete pblock;
             pblock = CreateNewBlock(reservekey);
@@ -2158,7 +2063,6 @@ Value getblocktemplate(const Array& params, bool fHelp)
                 throw JSONRPCError(-7, "Out of memory");
         }
 
-        // Update nTime
         pblock->UpdateTime(pindexPrev);
         pblock->nNonce = 0;
 
@@ -2239,7 +2143,6 @@ Value getblocktemplate(const Array& params, bool fHelp)
     else
     if (strMode == "submit")
     {
-        // Parse parameters
         CDataStream ssBlock(ParseHex(find_value(oparam, "data").get_str()), SER_NETWORK, PROTOCOL_VERSION);
         CBlock pblock;
         ssBlock >> pblock;
@@ -2308,14 +2211,6 @@ Value getblock(const Array& params, bool fHelp)
 }
 
 
-
-
-
-
-
-//
-// Call Table
-//
 
 
 static const CRPCCommand vRPCCommands[] =
@@ -2399,12 +2294,6 @@ const CRPCCommand *CRPCTable::operator[](string name) const
     return (*it).second;
 }
 
-//
-// HTTP protocol
-//
-// This ain't Apache.  We're just using HTTP header for the length field
-// and to be compatible with other JSON-RPC implementations.
-//
 
 string HTTPPost(const string& strMsg, const map<string,string>& mapRequestHeaders)
 {
@@ -2430,7 +2319,7 @@ string rfc1123Time()
     time(&now);
     struct tm* now_gmt = gmtime(&now);
     string locale(setlocale(LC_TIME, NULL));
-    setlocale(LC_TIME, "C"); // we want posix (aka "C") weekday/month strings
+    setlocale(LC_TIME, "C");
     strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S +0000", now_gmt);
     setlocale(LC_TIME, locale.c_str());
     return string(buffer);
@@ -2525,16 +2414,13 @@ int ReadHTTP(std::basic_istream<char>& stream, map<string, string>& mapHeadersRe
     mapHeadersRet.clear();
     strMessageRet = "";
 
-    // Read status
     int nProto = 0;
     int nStatus = ReadHTTPStatus(stream, nProto);
 
-    // Read header
     int nLen = ReadHTTPHeader(stream, mapHeadersRet);
     if (nLen < 0 || nLen > (int)MAX_SIZE)
         return 500;
 
-    // Read message
     if (nLen > 0)
     {
         vector<char> vch(nLen);
@@ -2565,16 +2451,6 @@ bool HTTPAuthorized(map<string, string>& mapHeaders)
     return strUserPass == strRPCUserColonPass;
 }
 
-//
-// JSON-RPC protocol.  MarineCoin speaks version 1.0 for maximum compatibility,
-// but uses JSON-RPC 1.1/2.0 standards for parts of the 1.0 standard that were
-// unspecified (HTTP errors and contents of 'error').
-//
-// 1.0 spec: http://json-rpc.org/wiki/specification
-// 1.2 spec: http://groups.google.com/group/json-rpc/web/json-rpc-over-http
-// http://www.codeproject.com/KB/recipes/JSON_Spirit.aspx
-//
-
 string JSONRPCRequest(const string& strMethod, const Array& params, const Value& id)
 {
     Object request;
@@ -2604,7 +2480,6 @@ string JSONRPCReply(const Value& result, const Value& error, const Value& id)
 
 void ErrorReply(std::ostream& stream, const Object& objError, const Value& id)
 {
-    // Send error reply from json-rpc error object
     int nStatus = 500;
     int code = find_value(objError, "code").get_int();
     if (code == -32600) nStatus = 400;
@@ -2615,7 +2490,6 @@ void ErrorReply(std::ostream& stream, const Object& objError, const Value& id)
 
 bool ClientAllowed(const boost::asio::ip::address& address)
 {
-    // Make sure that IPv4-compatible and IPv4-mapped IPv6 addresses are treated as IPv4 addresses
     if (address.is_v6()
      && (address.to_v6().is_v4_compatible()
       || address.to_v6().is_v4_mapped()))
@@ -2624,7 +2498,7 @@ bool ClientAllowed(const boost::asio::ip::address& address)
     if (address == asio::ip::address_v4::loopback()
      || address == asio::ip::address_v6::loopback()
      || (address.is_v4()
-         // Chech whether IPv4 addresses match 127.0.0.0/8 (loopback subnet)
+     
       && (address.to_v4().to_ulong() & 0xff000000) == 0x7f000000))
         return true;
 
@@ -2636,9 +2510,6 @@ bool ClientAllowed(const boost::asio::ip::address& address)
     return false;
 }
 
-//
-// IOStream device that speaks SSL but can also speak non-SSL
-//
 template <typename Protocol>
 class SSLIOStreamDevice : public iostreams::device<iostreams::bidirectional> {
 public:
@@ -2740,7 +2611,6 @@ void ThreadRPCServer(void* parg)
 {
     IMPLEMENT_RANDOMIZE_STACK(ThreadRPCServer(parg));
 
-    // Make this thread recognisable as the RPC listener
     RenameThread("marinecore-rpclist");
 
     try
@@ -2759,7 +2629,6 @@ void ThreadRPCServer(void* parg)
     printf("ThreadRPCServer exited\n");
 }
 
-// Forward declaration required for RPCListen
 template <typename Protocol, typename SocketAcceptorService>
 static void RPCAcceptHandler(boost::shared_ptr< basic_socket_acceptor<Protocol, SocketAcceptorService> > acceptor,
                              ssl::context& context,
@@ -2767,15 +2636,11 @@ static void RPCAcceptHandler(boost::shared_ptr< basic_socket_acceptor<Protocol, 
                              AcceptedConnection* conn,
                              const boost::system::error_code& error);
 
-/**
- * Sets up I/O resources to accept and handle a new connection.
- */
 template <typename Protocol, typename SocketAcceptorService>
 static void RPCListen(boost::shared_ptr< basic_socket_acceptor<Protocol, SocketAcceptorService> > acceptor,
                    ssl::context& context,
                    const bool fUseSSL)
 {
-    // Accept connection
     AcceptedConnectionImpl<Protocol>* conn = new AcceptedConnectionImpl<Protocol>(acceptor->get_io_service(), context, fUseSSL);
 
     acceptor->async_accept(
@@ -2789,9 +2654,6 @@ static void RPCListen(boost::shared_ptr< basic_socket_acceptor<Protocol, SocketA
                 boost::asio::placeholders::error));
 }
 
-/**
- * Accept and handle incoming connection.
- */
 template <typename Protocol, typename SocketAcceptorService>
 static void RPCAcceptHandler(boost::shared_ptr< basic_socket_acceptor<Protocol, SocketAcceptorService> > acceptor,
                              ssl::context& context,
@@ -2801,32 +2663,25 @@ static void RPCAcceptHandler(boost::shared_ptr< basic_socket_acceptor<Protocol, 
 {
     vnThreadsRunning[THREAD_RPCLISTENER]++;
 
-    // Immediately start accepting new connections, except when we're canceled or our socket is closed.
     if (error != asio::error::operation_aborted
      && acceptor->is_open())
         RPCListen(acceptor, context, fUseSSL);
 
     AcceptedConnectionImpl<ip::tcp>* tcp_conn = dynamic_cast< AcceptedConnectionImpl<ip::tcp>* >(conn);
 
-    // TODO: Actually handle errors
     if (error)
     {
         delete conn;
     }
 
-    // Restrict callers by IP.  It is important to
-    // do this before starting client thread, to filter out
-    // certain DoS and misbehaving clients.
     else if (tcp_conn
           && !ClientAllowed(tcp_conn->peer.address()))
     {
-        // Only send a 403 if we're not using SSL to prevent a DoS during the SSL handshake.
         if (!fUseSSL)
             conn->stream() << HTTPReply(403, "", false) << std::flush;
         delete conn;
     }
 
-    // start HTTP client thread
     else if (!CreateThread(ThreadRPCServer3, conn)) {
         printf("Failed to create RPC server client thread\n");
         delete conn;
@@ -2887,7 +2742,6 @@ void ThreadRPCServer2(void* parg)
         SSL_CTX_set_cipher_list(context.impl(), strCiphers.c_str());
     }
 
-    // Try a dual IPv6/IPv4 socket, falling back to separate IPv4 and IPv6 sockets
     const bool loopback = !mapArgs.count("-rpcallowip");
     asio::ip::address bindAddress = loopback ? asio::ip::address_v6::loopback() : asio::ip::address_v6::any();
     ip::tcp::endpoint endpoint(bindAddress, GetArg("-rpcport", 54595));
@@ -2900,7 +2754,6 @@ void ThreadRPCServer2(void* parg)
         acceptor->open(endpoint.protocol());
         acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
 
-        // Try making the socket dual IPv6/IPv4 (if listening on the "any" address)
         boost::system::error_code v6_only_error;
         acceptor->set_option(boost::asio::ip::v6_only(loopback), v6_only_error);
 
@@ -2908,12 +2761,10 @@ void ThreadRPCServer2(void* parg)
         acceptor->listen(socket_base::max_connections);
 
         RPCListen(acceptor, context, fUseSSL);
-        // Cancel outstanding listen-requests for this acceptor when shutting down
         StopRequests.connect(signals2::slot<void ()>(
                     static_cast<void (ip::tcp::acceptor::*)()>(&ip::tcp::acceptor::close), acceptor.get())
                 .track(acceptor));
 
-        // If dual IPv6/IPv4 failed (or we're opening loopback interfaces only), open IPv4 separately
         if (loopback || v6_only_error)
         {
             bindAddress = loopback ? asio::ip::address_v4::loopback() : asio::ip::address_v4::any();
@@ -2926,7 +2777,6 @@ void ThreadRPCServer2(void* parg)
             acceptor->listen(socket_base::max_connections);
 
             RPCListen(acceptor, context, fUseSSL);
-            // Cancel outstanding listen-requests for this acceptor when shutting down
             StopRequests.connect(signals2::slot<void ()>(
                         static_cast<void (ip::tcp::acceptor::*)()>(&ip::tcp::acceptor::close), acceptor.get())
                     .track(acceptor));
@@ -2960,15 +2810,12 @@ public:
 
 void JSONRequest::parse(const Value& valRequest)
 {
-    // Parse request
     if (valRequest.type() != obj_type)
         throw JSONRPCError(-32600, "Invalid Request object");
     const Object& request = valRequest.get_obj();
 
-    // Parse id now so errors from here on will have the id
     id = find_value(request, "id");
 
-    // Parse method
     Value valMethod = find_value(request, "method");
     if (valMethod.type() == null_type)
         throw JSONRPCError(-32600, "Missing method");
@@ -2978,7 +2825,6 @@ void JSONRequest::parse(const Value& valRequest)
     if (strMethod != "getwork" && strMethod != "getblocktemplate")
         printf("ThreadRPCServer method=%s\n", strMethod.c_str());
 
-    // Parse params
     Value valParams = find_value(request, "params");
     if (valParams.type() == array_type)
         params = valParams.get_array();
@@ -3027,7 +2873,6 @@ void ThreadRPCServer3(void* parg)
 {
     IMPLEMENT_RANDOMIZE_STACK(ThreadRPCServer3(parg));
 
-    // Make this thread recognisable as the RPC handler
     RenameThread("marinecore-rpchand");
 
     {
@@ -3053,7 +2898,6 @@ void ThreadRPCServer3(void* parg)
 
         ReadHTTP(conn->stream(), mapHeaders, strRequest);
 
-        // Check authorization
         if (mapHeaders.count("authorization") == 0)
         {
             conn->stream() << HTTPReply(401, "", false) << std::flush;
@@ -3062,9 +2906,7 @@ void ThreadRPCServer3(void* parg)
         if (!HTTPAuthorized(mapHeaders))
         {
             printf("ThreadRPCServer incorrect password attempt from %s\n", conn->peer_address_to_string().c_str());
-            /* Deter brute-forcing short passwords.
-               If this results in a DOS the user really
-               shouldn't have their RPC port exposed.*/
+            
             if (mapArgs["-rpcpassword"].size() < 20)
                 Sleep(250);
 
@@ -3077,23 +2919,19 @@ void ThreadRPCServer3(void* parg)
         JSONRequest jreq;
         try
         {
-            // Parse request
             Value valRequest;
             if (!read_string(strRequest, valRequest))
                 throw JSONRPCError(-32700, "Parse error");
 
             string strReply;
 
-            // singleton request
             if (valRequest.type() == obj_type) {
                 jreq.parse(valRequest);
 
                 Value result = tableRPC.execute(jreq.strMethod, jreq.params);
 
-                // Send reply
                 strReply = JSONRPCReply(result, Value::null, jreq.id);
 
-            // array of requests
             } else if (valRequest.type() == array_type)
                 strReply = JSONRPCExecBatch(valRequest.get_array());
             else
@@ -3122,12 +2960,10 @@ void ThreadRPCServer3(void* parg)
 
 json_spirit::Value CRPCTable::execute(const std::string &strMethod, const json_spirit::Array &params) const
 {
-    // Find method
     const CRPCCommand *pcmd = tableRPC[strMethod];
     if (!pcmd)
         throw JSONRPCError(-32601, "Method not found");
 
-    // Observe safe mode
     string strWarning = GetWarnings("rpc");
     if (strWarning != "" && !GetBoolArg("-disablesafemode") &&
         !pcmd->okSafeMode)
@@ -3135,7 +2971,6 @@ json_spirit::Value CRPCTable::execute(const std::string &strMethod, const json_s
 
     try
     {
-        // Execute
         Value result;
         {
             LOCK2(cs_main, pwalletMain->cs_wallet);
@@ -3158,7 +2993,6 @@ Object CallRPC(const string& strMethod, const Array& params)
               "If the file does not exist, create it with owner-readable-only file permissions."),
                 GetConfigFile().string().c_str()));
 
-    // Connect to localhost
     bool fUseSSL = GetBoolArg("-rpcssl");
     asio::io_service io_service;
     ssl::context context(io_service, ssl::context::sslv23);
@@ -3169,17 +3003,14 @@ Object CallRPC(const string& strMethod, const Array& params)
     if (!d.connect(GetArg("-rpcconnect", "127.0.0.1"), GetArg("-rpcport", "54595")))
         throw runtime_error("couldn't connect to server");
 
-    // HTTP basic authentication
     string strUserPass64 = EncodeBase64(mapArgs["-rpcuser"] + ":" + mapArgs["-rpcpassword"]);
     map<string, string> mapRequestHeaders;
     mapRequestHeaders["Authorization"] = string("Basic ") + strUserPass64;
 
-    // Send request
     string strRequest = JSONRPCRequest(strMethod, params, 1);
     string strPost = HTTPPost(strRequest, mapRequestHeaders);
     stream << strPost << std::flush;
 
-    // Receive reply
     map<string, string> mapHeaders;
     string strReply;
     int nStatus = ReadHTTP(stream, mapHeaders, strReply);
@@ -3190,7 +3021,6 @@ Object CallRPC(const string& strMethod, const Array& params)
     else if (strReply.empty())
         throw runtime_error("no response from server");
 
-    // Parse reply
     Value valReply;
     if (!read_string(strReply, valReply))
         throw runtime_error("couldn't parse reply from server");
@@ -3209,7 +3039,6 @@ void ConvertTo(Value& value)
 {
     if (value.type() == str_type)
     {
-        // reinterpret string as unquoted json value
         Value value2;
         string strJSON = value.get_str();
         if (!read_string(strJSON, value2))
@@ -3222,7 +3051,6 @@ void ConvertTo(Value& value)
     }
 }
 
-// Convert strings to command-specific RPC representation
 Array RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams)
 {
     Array params;
@@ -3231,9 +3059,7 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
 
     int n = params.size();
 
-    //
-    // Special case non-string parameter types
-    //
+   
     if (strMethod == "setgenerate"            && n > 0) ConvertTo<bool>(params[0]);
     if (strMethod == "setgenerate"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
     if (strMethod == "sendtoaddress"          && n > 1) ConvertTo<double>(params[1]);
@@ -3278,39 +3104,32 @@ int CommandLineRPC(int argc, char *argv[])
     int nRet = 0;
     try
     {
-        // Skip switches
         while (argc > 1 && IsSwitchChar(argv[1][0]))
         {
             argc--;
             argv++;
         }
 
-        // Method
         if (argc < 2)
             throw runtime_error("too few parameters");
         string strMethod = argv[1];
 
-        // Parameters default to strings
         std::vector<std::string> strParams(&argv[2], &argv[argc]);
         Array params = RPCConvertValues(strMethod, strParams);
 
-        // Execute
         Object reply = CallRPC(strMethod, params);
 
-        // Parse reply
         const Value& result = find_value(reply, "result");
         const Value& error  = find_value(reply, "error");
 
         if (error.type() != null_type)
         {
-            // Error
             strPrint = "error: " + write_string(error, false);
             int code = find_value(error.get_obj(), "code").get_int();
             nRet = abs(code);
         }
         else
         {
-            // Result
             if (result.type() == null_type)
                 strPrint = "";
             else if (result.type() == str_type)
@@ -3343,7 +3162,6 @@ int CommandLineRPC(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 #ifdef _MSC_VER
-    // Turn off microsoft heap dump noise
     _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
     _CrtSetReportFile(_CRT_WARN, CreateFile("NUL", GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, 0));
 #endif
