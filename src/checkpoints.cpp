@@ -1,9 +1,4 @@
-// Copyright (c) 2009-2012 The Marinecore developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
-#include <boost/assign/list_of.hpp> // for 'map_list_of()'
+#include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
 
 #include "checkpoints.h"
@@ -15,15 +10,8 @@ namespace Checkpoints
 {
     typedef std::map<int, uint256> MapCheckpoints;
 
-    //
-    // What makes a good checkpoint block?
-    // + Is surrounded by blocks with reasonable timestamps
-    //   (no blocks before with a timestamp after, none after with
-    //    timestamp before)
-    // + Contains no strange transactions
-    //
     static MapCheckpoints mapCheckpoints =
-        boost::assign::map_list_of // Yo dawg, this is the secret. Checkpoint 0 hash == Genesis block hash.
+        boost::assign::map_list_of
         (         0, uint256("0x8d86c6905181064a6d759049f9312959cfc582b043df781a1ec93319a20562af"))
             (       100, uint256("0x00a0379e91129de4c6374b11a2a2d7cee4fb5281f3e21a0b6e1bf37b5e2e4713"))
             (       300, uint256("0xab933ec52a6c63bad062bdab1f488d623d5c17865d2488f5a88c4974d3124317"))
@@ -40,7 +28,7 @@ namespace Checkpoints
 
     bool CheckBlock(int nHeight, const uint256& hash)
     {
-        if (fTestNet) return true; // Testnet has no checkpoints
+        if (fTestNet) return true;
 
         MapCheckpoints::const_iterator i = mapCheckpoints.find(nHeight);
         if (i == mapCheckpoints.end()) return true;
