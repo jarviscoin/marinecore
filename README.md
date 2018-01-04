@@ -1,1 +1,1 @@
-# marinecoin
+# marinecoin MTC
