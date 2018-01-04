@@ -1,8 +1,3 @@
-// Copyright (c) 2009-2012 The Marinecore Developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #include <openssl/aes.h>
 #include <openssl/evp.h>
 #include <vector>
@@ -18,9 +13,6 @@ bool CCrypter::SetKeyFromPassphrase(const SecureString& strKeyData, const std::v
     if (nRounds < 1 || chSalt.size() != WALLET_CRYPTO_SALT_SIZE)
         return false;
 
-    // Try to keep the keydata out of swap (and be a bit over-careful to keep the IV that we don't even use out of swap)
-    // Note that this does nothing about suspend-to-disk (which will put all our key data on disk)
-    // Note as well that at no point in this program is any attempt made to prevent stealing of keys by reading the memory of the running process.  
     mlock(&chKey[0], sizeof chKey);
     mlock(&chIV[0], sizeof chIV);
 
@@ -45,9 +37,6 @@ bool CCrypter::SetKey(const CKeyingMaterial& chNewKey, const std::vector<unsigne
     if (chNewKey.size() != WALLET_CRYPTO_KEY_SIZE || chNewIV.size() != WALLET_CRYPTO_KEY_SIZE)
         return false;
 
-    // Try to keep the keydata out of swap
-    // Note that this does nothing about suspend-to-disk (which will put all our key data on disk)
-    // Note as well that at no point in this program is any attempt made to prevent stealing of keys by reading the memory of the running process.  
     mlock(&chKey[0], sizeof chKey);
     mlock(&chIV[0], sizeof chIV);
 
@@ -62,9 +51,7 @@ bool CCrypter::Encrypt(const CKeyingMaterial& vchPlaintext, std::vector<unsigned
 {
     if (!fKeySet)
         return false;
-
-    // max ciphertext len for a n bytes of plaintext is
-    // n + AES_BLOCK_SIZE - 1 bytes
+        
     int nLen = vchPlaintext.size();
     int nCLen = nLen + AES_BLOCK_SIZE, nFLen = 0;
     vchCiphertext = std::vector<unsigned char> (nCLen);
@@ -90,7 +77,6 @@ bool CCrypter::Decrypt(const std::vector<unsigned char>& vchCiphertext, CKeyingM
     if (!fKeySet)
         return false;
 
-    // plaintext will always be equal to or lesser than length of ciphertext
     int nLen = vchCiphertext.size();
     int nPLen = nLen, nFLen = 0;
 
