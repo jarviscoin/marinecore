@@ -1,8 +1,3 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Marinecore developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef MARINECORE_ALLOCATORS_H
 #define MARINECORE_ALLOCATORS_H
 
@@ -19,16 +14,11 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
-// This is used to attempt to keep keying material out of swap
-// Note that VirtualLock does not provide this as a guarantee on Windows,
-// but, in practice, memory that has been VirtualLock'd almost never gets written to
-// the pagefile except in rare circumstances where memory is extremely low.
 #define mlock(p, n) VirtualLock((p), (n));
 #define munlock(p, n) VirtualUnlock((p), (n));
 #else
 #include <sys/mman.h>
 #include <limits.h>
-/* This comes from limits.h if it's not defined there set a sane default */
 #ifndef PAGESIZE
 #include <unistd.h>
 #define PAGESIZE sysconf(_SC_PAGESIZE)
@@ -41,14 +31,9 @@
   (((((size_t)(a)) + (b) - 1) | ((PAGESIZE) - 1)) + 1) - (((size_t)(a)) & (~((PAGESIZE) - 1))))
 #endif
 
-//
-// Allocator that locks its contents from being paged
-// out of memory and clears its contents before deletion.
-//
 template<typename T>
 struct secure_allocator : public std::allocator<T>
 {
-    // MSVC8 default copy constructor is broken
     typedef std::allocator<T> base;
     typedef typename base::size_type size_type;
     typedef typename base::difference_type  difference_type;
@@ -86,13 +71,9 @@ struct secure_allocator : public std::allocator<T>
 };
 
 
-//
-// Allocator that clears its contents before deletion.
-//
 template<typename T>
 struct zero_after_free_allocator : public std::allocator<T>
 {
-    // MSVC8 default copy constructor is broken
     typedef std::allocator<T> base;
     typedef typename base::size_type size_type;
     typedef typename base::difference_type  difference_type;
@@ -117,7 +98,6 @@ struct zero_after_free_allocator : public std::allocator<T>
     }
 };
 
-// This is exactly like std::string, but with a custom allocator.
 typedef std::basic_string<char, std::char_traits<char>, secure_allocator<char> > SecureString;
 
 #endif
