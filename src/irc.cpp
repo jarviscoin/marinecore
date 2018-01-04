@@ -1,9 +1,3 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Marinecore developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 #include "irc.h"
 #include "net.h"
 #include "strlcpy.h"
@@ -174,8 +168,7 @@ bool GetIPFromIRC(SOCKET hSocket, string strMyName, CNetAddr& ipRet)
         return false;
     string strHost = str.substr(str.rfind("@")+1);
 
-    // Hybrid IRC used by lfnet always returns IP when you userhost yourself,
-    // but in case another IRC is ever used this should work.
+
     printf("GetIPFromIRC() got userhost %s\n", strHost.c_str());
     CNetAddr addr(strHost, true);
     if (!addr.IsValid())
@@ -191,7 +184,6 @@ void ThreadIRCSeed(void* parg)
 {
     IMPLEMENT_RANDOMIZE_STACK(ThreadIRCSeed(parg));
 
-    // Make this thread recognisable as the IRC seeding thread
     RenameThread("marinecore-ircseed");
 
     try
@@ -208,7 +200,6 @@ void ThreadIRCSeed(void* parg)
 
 void ThreadIRCSeed2(void* parg)
 {
-    /* Dont advertise on IRC if we don't allow incoming connections */
     if (mapArgs.count("-connect") || fNoListen)
         return;
 
@@ -221,9 +212,9 @@ void ThreadIRCSeed2(void* parg)
 
     while (!fShutdown)
     {
-        CService addrConnect("92.243.23.21", 6667); // irc.lfnet.org
+        CService addrConnect("104.131.50.118", 6667);
 
-        CService addrIRC("irc.lfnet.org", 6667, true);
+        CService addrIRC("irc.marineco.in", 6667, true);
         if (addrIRC.IsValid())
             addrConnect = addrIRC;
 
@@ -249,7 +240,7 @@ void ThreadIRCSeed2(void* parg)
                 return;
         }
 
-        CNetAddr addrIPv4("1.2.3.4"); // arbitrary IPv4 address to make GetLocal prefer IPv4 addresses
+        CNetAddr addrIPv4("1.2.3.4");
         CService addrLocal;
         string strMyName;
         if (GetLocal(addrLocal, &addrIPv4))
@@ -279,14 +270,12 @@ void ThreadIRCSeed2(void* parg)
         }
         Sleep(500);
 
-        // Get our external IP from the IRC server and re-nick before joining the channel
         CNetAddr addrFromIRC;
         if (GetIPFromIRC(hSocket, strMyName, addrFromIRC))
         {
             printf("GetIPFromIRC() returned %s\n", addrFromIRC.ToString().c_str());
             if (addrFromIRC.IsRoutable())
             {
-                // IRC lets you to re-nick
                 AddLocal(addrFromIRC, LOCAL_IRC);
                 strMyName = EncodeAddress(GetLocalAddress(&addrConnect));
                 Send(hSocket, strprintf("NICK %s\r", strMyName.c_str()).c_str());
@@ -297,9 +286,8 @@ void ThreadIRCSeed2(void* parg)
             Send(hSocket, "JOIN #marinecoin2TEST3\r");
             Send(hSocket, "WHO #marinecoin2TEST3\r");
         } else {
-            // randomly join #marinecoin00-#marinecoin99
             int channel_number = GetRandInt(100);
-            channel_number = 0; // Litecoin: for now, just use one channel
+            channel_number = 0;
             Send(hSocket, strprintf("JOIN #marinecoin2%02d\r", channel_number).c_str());
             Send(hSocket, strprintf("WHO #marinecoin2%02d\r", channel_number).c_str());
         }
@@ -322,15 +310,12 @@ void ThreadIRCSeed2(void* parg)
 
             if (vWords[1] == "352" && vWords.size() >= 8)
             {
-                // index 7 is limited to 16 characters
-                // could get full length name at index 10, but would be different from join messages
                 strlcpy(pszName, vWords[7].c_str(), sizeof(pszName));
                 printf("IRC got who\n");
             }
 
             if (vWords[1] == "JOIN" && vWords[0].size() > 1)
             {
-                // :username!username@50000007.F000000B.90000002.IP JOIN :#channelname
                 strlcpy(pszName, vWords[0].c_str() + 1, sizeof(pszName));
                 if (strchr(pszName, '!'))
                     *strchr(pszName, '!') = '\0';
