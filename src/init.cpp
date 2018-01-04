@@ -1,8 +1,3 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Marinecore developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #include "db.h"
 #include "walletdb.h"
 #include "marinecorerpc.h"
@@ -26,10 +21,6 @@ using namespace boost;
 CWallet* pwalletMain;
 CClientUIInterface uiInterface;
 
-//////////////////////////////////////////////////////////////////////////////
-//
-// Shutdown
-//
 
 void ExitTimeout(void* parg)
 {
@@ -42,10 +33,10 @@ void ExitTimeout(void* parg)
 void StartShutdown()
 {
 #ifdef QT_GUI
-    // ensure we leave the Qt main loop for a clean GUI exit (Shutdown() is called in marinecore.cpp afterwards)
+    
     uiInterface.QueueShutdown();
 #else
-    // Without UI, Shutdown() can simply be started in a new thread
+    
     CreateThread(Shutdown, NULL);
 #endif
 }
@@ -55,7 +46,6 @@ void Shutdown(void* parg)
     static CCriticalSection cs_Shutdown;
     static bool fTaken;
 
-    // Make this thread recognisable as the shutdown thread
     RenameThread("marinecore-shutoff");
 
     bool fFirstThread = false;
@@ -83,7 +73,6 @@ void Shutdown(void* parg)
         printf("MarineCoin exited\n\n");
         fExit = true;
 #ifndef QT_GUI
-        // ensure non UI client get's exited here, but let Marinecore-Qt reach return 0; in marinecore.cpp
         exit(0);
 #endif
     }
@@ -107,23 +96,12 @@ void HandleSIGHUP(int)
 }
 
 
-
-
-
-//////////////////////////////////////////////////////////////////////////////
-//
-// Start
-//
 #if !defined(QT_GUI)
 bool AppInit(int argc, char* argv[])
 {
     bool fRet = false;
     try
     {
-        //
-        // Parameters
-        //
-        // If Qt is used, parameters/litecoin.conf are parsed in qt/marinecore.cpp's main()
         ParseParameters(argc, argv);
         if (!boost::filesystem::is_directory(GetDataDir(false)))
         {
@@ -134,7 +112,6 @@ bool AppInit(int argc, char* argv[])
 
         if (mapArgs.count("-?") || mapArgs.count("--help"))
         {
-            // First part of help message is specific to MarineCoin server / RPC client
             std::string strUsage = _("MarineCoin version") + " " + FormatFullVersion() + "\n\n" +
                 _("Usage:") + "\n" +
                   "  marinecoin [options]                     " + "\n" +
@@ -148,7 +125,6 @@ bool AppInit(int argc, char* argv[])
             return false;
         }
 
-        // Command-line RPC
         for (int i = 1; i < argc; i++)
             if (!IsSwitchChar(argv[i][0]) && !boost::algorithm::istarts_with(argv[i], "marinecoin:"))
                 fCommandLine = true;
@@ -176,7 +152,6 @@ int main(int argc, char* argv[])
 {
     bool fRet = false;
 
-    // Connect signal handlers
     noui_connect();
 
     fRet = AppInit(argc, argv);
@@ -213,10 +188,8 @@ bool static Bind(const CService &addr, bool fError = true) {
     return true;
 }
 
-/* import from marinecorerpc.cpp */
 extern double GetDifficulty(const CBlockIndex* blockindex = NULL);
 
-// Core-specific options shared between UI and daemon
 std::string HelpMessage()
 {
     string strUsage = _("Options:") + "\n" +
@@ -291,26 +264,19 @@ std::string HelpMessage()
     return strUsage;
 }
 
-/** Initialize MarineCoin.
- *  @pre Parameters should be parsed and config file should be read.
- */
 bool AppInit2()
 {
-    // ********************************************************* Step 1: setup
 #ifdef _MSC_VER
-    // Turn off microsoft heap dump noise
     _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
     _CrtSetReportFile(_CRT_WARN, CreateFileA("NUL", GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, 0));
 #endif
 #if _MSC_VER >= 1400
-    // Disable confusing "helpful" text message on abort, ctrl-c
     _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
 #endif
 #ifndef WIN32
     umask(077);
 #endif
 #ifndef WIN32
-    // Clean shutdown on SIGTERM
     struct sigaction sa;
     sa.sa_handler = HandleSIGTERM;
     sigemptyset(&sa.sa_mask);
@@ -318,7 +284,6 @@ bool AppInit2()
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
 
-    // Reopen debug.log on SIGHUP
     struct sigaction sa_hup;
     sa_hup.sa_handler = HandleSIGHUP;
     sigemptyset(&sa_hup.sa_mask);
@@ -326,48 +291,36 @@ bool AppInit2()
     sigaction(SIGHUP, &sa_hup, NULL);
 #endif
 
-    // ********************************************************* Step 2: parameter interactions
 
     fTestNet = GetBoolArg("-testnet");
-    // Keep irc seeding on by default for now.
-//    if (fTestNet)
-//    {
+
         SoftSetBoolArg("-irc", false);
-//    }
 
     if (mapArgs.count("-bind")) {
-        // when specifying an explicit binding address, you want to listen on it
-        // even when -connect or -proxy is specified
         SoftSetBoolArg("-listen", true);
     }
 
     if (mapArgs.count("-connect")) {
-        // when only connecting to trusted nodes, do not seed via DNS, or listen by default
         SoftSetBoolArg("-dnsseed", false);
         SoftSetBoolArg("-listen", false);
     }
 
     if (mapArgs.count("-proxy")) {
-        // to protect privacy, do not listen by default if a proxy server is specified
         SoftSetBoolArg("-listen", false);
     }
 
     if (!GetBoolArg("-listen", true)) {
-        // do not map ports or try to retrieve public IP when not listening (pointless)
         SoftSetBoolArg("-upnp", false);
         SoftSetBoolArg("-discover", false);
     }
 
     if (mapArgs.count("-externalip")) {
-        // if an explicit public IP is specified, do not try to find others
         SoftSetBoolArg("-discover", false);
     }
 
-    // ********************************************************* Step 3: parameter-to-internal-flags
 
     fDebug = GetBoolArg("-debug");
 
-    // -debug implies fDebug*
     if (fDebug)
         fDebugNet = true;
     else
@@ -386,7 +339,6 @@ bool AppInit2()
     else
         fServer = GetBoolArg("-server");
 
-    /* force fServer when running without GUI */
 #if !defined(QT_GUI)
     fServer = true;
 #endif
@@ -400,10 +352,7 @@ bool AppInit2()
         if (nNewTimeout > 0 && nNewTimeout < 600000)
             nConnectTimeout = nNewTimeout;
     }
-
-    // Continue to put "/P2SH/" in the coinbase to monitor
-    // BIP16 support.
-    // This can be removed eventually...
+    
     const char* pszP2SH = "/P2SH/";
     COINBASE_FLAGS << std::vector<unsigned char>(pszP2SH, pszP2SH+strlen(pszP2SH));
 
@@ -422,11 +371,8 @@ bool AppInit2()
             return InitError(strprintf(_("Invalid amount for -mininput=<amount>: '%s'"), mapArgs["-mininput"].c_str()));
     }
 
-    // ********************************************************* Step 4: application initialization: dir lock, daemonize, pidfile, debug log
-
-    // Make sure only a single marinecoin process is using the data directory.
     boost::filesystem::path pathLockFile = GetDataDir() / ".lock";
-    FILE* file = fopen(pathLockFile.string().c_str(), "a"); // empty lock file; created if it doesn't exist.
+    FILE* file = fopen(pathLockFile.string().c_str(), "a"); 
     if (file) fclose(file);
     static boost::interprocess::file_lock lock(pathLockFile.string().c_str());
     if (!lock.try_lock())
@@ -435,7 +381,6 @@ bool AppInit2()
 #if !defined(WIN32) && !defined(QT_GUI)
     if (fDaemon)
     {
-        // Daemonize
         pid_t pid = fork();
         if (pid < 0)
         {
@@ -468,7 +413,6 @@ bool AppInit2()
 
     int64 nStart;
 
-    // ********************************************************* Step 5: network initialization
 
     int nSocksVersion = GetArg("-socks", 5);
 
@@ -509,7 +453,6 @@ bool AppInit2()
         fProxy = true;
     }
 
-    // -tor can override normal proxy, -notor disables tor entirely
     if (!(mapArgs.count("-tor") && mapArgs["-tor"] == "0") && (fProxy || mapArgs.count("-tor"))) {
         CService addrOnion;
         if (!mapArgs.count("-tor"))
@@ -522,7 +465,6 @@ bool AppInit2()
         SetReachable(NET_TOR);
     }
 
-    // see Step 2: parameter interactions for more information about these
     fNoListen = !GetBoolArg("-listen", true);
     fDiscover = GetBoolArg("-discover", true);
     fNameLookup = GetBoolArg("-dns", true);
@@ -566,7 +508,6 @@ bool AppInit2()
     BOOST_FOREACH(string strDest, mapMultiArgs["-seednode"])
         AddOneShot(strDest);
 
-    // ********************************************************* Step 6: load blockchain
 
     if (GetBoolArg("-loadblockindextest"))
     {
@@ -582,9 +523,6 @@ bool AppInit2()
     if (!LoadBlockIndex())
         strErrors << _("Error loading blkindex.dat") << "\n";
 
-    // as LoadBlockIndex can take several minutes, it's possible the user
-    // requested to kill marinecoin-qt during the last operation. If so, exit.
-    // As the program has not fully started yet, Shutdown() is possibly overkill.
     if (fRequestShutdown)
     {
         printf("Shutdown requested. Exiting.\n");
@@ -638,7 +576,6 @@ bool AppInit2()
                 block.GetHash().ToString().c_str(),
                 block.GetPoWHash().ToString().c_str(),
                 block.nVersion,
-                //CBigNum().SetCompact(block.nBits).getuint256().ToString().c_str(),
                 GetDifficulty(pindex),
                 block.nTime
             );
@@ -647,7 +584,6 @@ bool AppInit2()
         return false;
     }
 
-    // ********************************************************* Step 7: load wallet
 
     uiInterface.InitMessage(_("Loading wallet..."));
     printf("Loading wallet...\n");
@@ -674,11 +610,11 @@ bool AppInit2()
     if (GetBoolArg("-upgradewallet", fFirstRun))
     {
         int nMaxVersion = GetArg("-upgradewallet", 0);
-        if (nMaxVersion == 0) // the -upgradewallet without argument case
+        if (nMaxVersion == 0)
         {
             printf("Performing wallet upgrade to %i\n", FEATURE_LATEST);
             nMaxVersion = CLIENT_VERSION;
-            pwalletMain->SetMinVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
+            pwalletMain->SetMinVersion(FEATURE_LATEST); 
         }
         else
             printf("Allowing wallet upgrade up to %i\n", nMaxVersion);
@@ -689,7 +625,6 @@ bool AppInit2()
 
     if (fFirstRun)
     {
-        // Create new keyUser and set as default key
         RandAddSeedPerfmon();
 
         CPubKey newDefaultKey;
@@ -724,7 +659,6 @@ bool AppInit2()
         printf(" rescan      %15"PRI64d"ms\n", GetTimeMillis() - nStart);
     }
 
-    // ********************************************************* Step 8: import blocks
 
     if (mapArgs.count("-loadblock"))
     {
@@ -736,7 +670,6 @@ bool AppInit2()
         }
     }
 
-    // ********************************************************* Step 9: load peers
 
     uiInterface.InitMessage(_("Loading addresses..."));
     printf("Loading addresses...\n");
@@ -751,14 +684,12 @@ bool AppInit2()
     printf("Loaded %i addresses from peers.dat  %"PRI64d"ms\n",
            addrman.size(), GetTimeMillis() - nStart);
 
-    // ********************************************************* Step 10: start node
 
     if (!CheckDiskSpace())
         return false;
 
     RandAddSeedPerfmon();
 
-    //// debug print
     printf("mapBlockIndex.size() = %d\n",   mapBlockIndex.size());
     printf("nBestHeight = %d\n",            nBestHeight);
     printf("setKeyPool.size() = %d\n",      pwalletMain->setKeyPool.size());
@@ -771,7 +702,6 @@ bool AppInit2()
     if (fServer)
         CreateThread(ThreadRPCServer, NULL);
 
-    // ********************************************************* Step 11: finished
 
     uiInterface.InitMessage(_("Done loading"));
     printf("Done loading\n");
@@ -779,12 +709,10 @@ bool AppInit2()
     if (!strErrors.str().empty())
         return InitError(strErrors.str());
 
-     // Add wallet transactions that aren't already in a block to mapTransactions
     pwalletMain->ReacceptWalletTransactions();
 
 #if !defined(QT_GUI)
-    // Loop until process is exit()ed from shutdown() function,
-    // called from ThreadRPCServer thread when a "stop" command is received.
+
     while (1)
         Sleep(5000);
 #endif
