@@ -3,7 +3,7 @@
 #include "version.h"
 
 
-const std::string CLIENT_NAME("Satoshi");
+const std::string CLIENT_NAME("Jarvis");
 
 #define CLIENT_VERSION_SUFFIX   "-mtc"
 
