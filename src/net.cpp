@@ -996,6 +996,11 @@ static const char *strDNSSeed[][2] = {
     {"marineco.in", "seed2.marineco.in"},
     {"marineco.in", "seed3.marineco.in"},
     {"marineco.in", "seed4.marineco.in"},
+    {"marineco.in", "seed5.marineco.in"},
+    {"marineco.in", "seed6.marineco.in"},
+    {"marineco.in", "seed7.marineco.in"},
+    {"marineco.in", "seed8.marineco.in"},
+    {"marineco.in", "testnet.marineco.in"},
 };
 
 void ThreadDNSAddressSeed(void* parg)
