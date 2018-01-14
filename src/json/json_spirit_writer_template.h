@@ -1,11 +1,6 @@
 #ifndef JSON_SPIRIT_WRITER_TEMPLATE
 #define JSON_SPIRIT_WRITER_TEMPLATE
 
-//          Copyright John W. Wilkinson 2007 - 2009.
-// Distributed under the MIT License, see accompanying file LICENSE.txt
-
-// json spirit version 4.03
-
 #include "json_spirit_value.h"
 
 #include <cassert>
@@ -90,9 +85,6 @@ namespace json_spirit
         return result;
     }
 
-    // this class generates the JSON text,
-    // it keeps track of the indentation level etc.
-    //
     template< class Value_type, class Ostream_type >
     class Generator
     {
@@ -125,7 +117,6 @@ namespace json_spirit
                 case bool_type:  output( value.get_bool() );  break;
                 case int_type:   output_int( value );         break;
 
-                /// Marinecore: Added std::fixed and changed precision from 16 to 8
                 case real_type:  os_ << std::showpoint << std::fixed << std::setprecision(8)
                                      << value.get_real();     break;
 
@@ -219,7 +210,7 @@ namespace json_spirit
             if( pretty_ ) os_ << '\n';
         }
 
-        Generator& operator=( const Generator& ); // to prevent "assignment operator could not be generated" warning
+        Generator& operator=( const Generator& ); 
 
         Ostream_type& os_;
         int indentation_level_;

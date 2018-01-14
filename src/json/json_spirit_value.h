@@ -1,11 +1,6 @@
 #ifndef JSON_SPIRIT_VALUE
 #define JSON_SPIRIT_VALUE
 
-//          Copyright John W. Wilkinson 2007 - 2009.
-// Distributed under the MIT License, see accompanying file LICENSE.txt
-
-// json spirit version 4.03
-
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 # pragma once
 #endif
@@ -26,8 +21,8 @@ namespace json_spirit
     enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
     static const char* Value_type_name[]={"obj", "array", "str", "bool", "int", "real", "null"};
 
-    template< class Config >    // Config determines whether the value uses std::string or std::wstring and
-                                // whether JSON Objects are represented as vectors or maps
+    template< class Config >    
+                                
     class Value_impl
     {
     public:
@@ -36,9 +31,9 @@ namespace json_spirit
         typedef typename Config::String_type String_type;
         typedef typename Config::Object_type Object;
         typedef typename Config::Array_type Array;
-        typedef typename String_type::const_pointer Const_str_ptr;  // eg const char*
+        typedef typename String_type::const_pointer Const_str_ptr;  
 
-        Value_impl();  // creates null value
+        Value_impl(); 
         Value_impl( Const_str_ptr      value ); 
         Value_impl( const String_type& value );
         Value_impl( const Object&      value );
@@ -72,8 +67,8 @@ namespace json_spirit
         Object& get_obj();
         Array&  get_array();
 
-        template< typename T > T get_value() const;  // example usage: int    i = value.get_value< int >();
-                                                     // or             double d = value.get_value< double >();
+        template< typename T > T get_value() const;  
+                                                     
 
         static const Value_impl null;
 
@@ -90,7 +85,6 @@ namespace json_spirit
         bool is_uint64_;
     };
 
-    // vector objects
 
     template< class Config >
     struct Pair_impl
@@ -133,7 +127,6 @@ namespace json_spirit
         }
     };
 
-    // typedefs for ASCII
 
     typedef Config_vector< std::string > Config;
 
@@ -142,7 +135,6 @@ namespace json_spirit
     typedef Config::Object_type Object;
     typedef Config::Array_type  Array;
 
-    // typedefs for Unicode
 
 #ifndef BOOST_NO_STD_WSTRING
 
@@ -154,7 +146,6 @@ namespace json_spirit
     typedef wConfig::Array_type  wArray;
 #endif
 
-    // map objects
 
     template< class String >
     struct Config_map
@@ -181,15 +172,12 @@ namespace json_spirit
         }
     };
 
-    // typedefs for ASCII
-
     typedef Config_map< std::string > mConfig;
 
     typedef mConfig::Value_type  mValue;
     typedef mConfig::Object_type mObject;
     typedef mConfig::Array_type  mArray;
 
-    // typedefs for Unicode
 
 #ifndef BOOST_NO_STD_WSTRING
 
@@ -200,10 +188,6 @@ namespace json_spirit
     typedef wmConfig::Array_type  wmArray;
 
 #endif
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    // implementation
 
     template< class Config >
     const Value_impl< Config > Value_impl< Config >::null;
@@ -342,7 +326,6 @@ namespace json_spirit
         {
             std::ostringstream os;
 
-            ///// Marinecore: Tell the types by name instead of by number
             os << "value is type " << Value_type_name[type()] << ", expected " << Value_type_name[vtype];
 
             throw std::runtime_error( os.str() );
@@ -450,8 +433,6 @@ namespace json_spirit
         return ( name_ == lhs.name_ ) && ( value_ == lhs.value_ );
     }
 
-    // converts a C string, ie. 8 bit char array, to a string object
-    //
     template < class String_type >
     String_type to_str( const char* c_str )
     {
@@ -465,7 +446,6 @@ namespace json_spirit
         return result;
     }
 
-    //
 
     namespace internal_
     {

@@ -276,7 +276,6 @@ public:
 
     void SetHex(const std::string& str)
     {
-        // skip 0x
         const char* psz = str.c_str();
         while (isspace(*psz))
             psz++;

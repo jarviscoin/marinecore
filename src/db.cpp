@@ -532,7 +532,7 @@ bool CTxDB::LoadBlockIndex()
                             pindexFork = pindex->pprev;
                         }
                         else
-                            if (txFound.GetHash() != hashTx) // not a duplicate tx
+                            if (txFound.GetHash() != hashTx)
                             {
                                 printf("LoadBlockIndex(): *** invalid tx position for %s\n", hashTx.ToString().c_str());
                                 pindexFork = pindex->pprev;
